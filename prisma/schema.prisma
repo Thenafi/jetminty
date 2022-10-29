@@ -1,0 +1,53 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = "file:./dev.db"
+}
+
+model Student {
+    id          String        @id
+    gibberish   String        @unique @default(uuid())
+    createdAt   DateTime      @default(now())
+    updatedAt   DateTime      @updatedAt
+    name        String
+    batch       Int
+    dept        String
+    bloodGroup  String
+    homeTown    String
+    phoneNumber String        @default("0000000000")
+    email       String        @unique
+    socialLink  String        @unique
+    gender      String
+    clg         String
+    sec         String
+    active      Boolean
+    birthday    DateTime
+    avatarLink  String        @default("https://source.unsplash.com/random/500x500/?sky")
+    versions    UserVersion[]
+
+    @@index([email, id, name])
+}
+
+model UserVersion {
+    studentId   String    @default("AA-0000000")
+    gibberish   Int       @id @default(autoincrement())
+    createdAt   DateTime  @default(now())
+    name        String?
+    batch       Int?
+    dept        String?
+    bloodGroup  String?
+    homeTown    String?
+    phoneNumber String?
+    email       String?   @unique
+    socialLink  String?   @unique
+    gender      String?
+    clg         String?
+    sec         String?
+    active      Boolean?
+    birthday    DateTime?
+    avatarLink  String?
+    Stduent     Student?  @relation(fields: [studentId], references: [id])
+}
