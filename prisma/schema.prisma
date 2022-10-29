@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-    provider = "sqlite"
-    url      = "file:./dev.db"
+    provider = "cockroachdb"
+    url      = env("DATABASE_URL")
 }
 
 model Student {
@@ -33,7 +33,7 @@ model Student {
 
 model Version {
     studentId   String    @default("AA-0000000")
-    gibberish   Int       @id @default(autoincrement())
+    gibberish   BigInt    @id @default(autoincrement())
     createdAt   DateTime  @default(now())
     name        String?
     batch       Int?
