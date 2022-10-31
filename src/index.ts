@@ -10,17 +10,18 @@ const app = express()
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cors());
 
 app.get('/', async (req, res) => {
   res.send('Meow')
 })
 
-app.get('/students',  cors(), async (req, res) => {
+
+app.get('/students', async (req, res) => {
   const users = await prisma.student.findMany({
     skip: 40,
     take: 10  
   })
-  console.log(req.headers)
   res.json(users)
 })
 
@@ -103,7 +104,7 @@ app.get('/entry_api_test2', upload.none(), async (req, res) => {
   res.json(student)
 })
 
-app.get("/getSingleStudent/:id", cors(), async (req, res) => {
+app.get("/getSingleStudent/:id", async (req, res) => {
   const id = req.params.id;
   const student = await prisma.student.findUnique({
     where: {
