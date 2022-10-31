@@ -3,6 +3,7 @@ import express from 'express'
 const multer = require('multer');
 const cors = require('cors');
 const upload = multer();
+var morgan = require('morgan')
 
 
 const prisma = new PrismaClient()
@@ -10,6 +11,7 @@ const app = express()
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(morgan('combined'))
 app.use(cors());
 
 app.get('/', async (req, res) => {
@@ -18,11 +20,61 @@ app.get('/', async (req, res) => {
 
 
 app.get('/students', async (req, res) => {
+  console.log(req.query)
+  const skip: number = req.query.page ? parseInt(req.query.page as string) - 1 : 0
+  const take: number = req.query.size ? parseInt(req.query.size as string) : 100
+  const filter: { field: string, type: string, value: string }[] = req.query.filter ? req.query.filter as [] : []
+  const filterArray: any[] = []
+  for (let i = 0; i < filter.length; i++) {
+    const element = filter[i];
+    if (element.type === '=') {
+      filterArray.push({
+        [element.field]: {
+          equals: parseInt(element.value) ? parseInt(element.value) : element.value
+        }
+
+      })
+
+
+    } else if (element.type === 'like') {
+      filterArray.push({
+        [element.field]: {
+          contains: element.value
+        }
+
+      })
+    }
+
+  }
+  console.log(filterArray)
+  const totalStudent = await prisma.student.count()
+
   const users = await prisma.student.findMany({
-    skip: 40,
-    take: 10  
+    skip: skip,
+    take: take,
+    where: {
+      AND: filterArray
+    }
   })
-  res.json(users)
+  res.json({ last_page: totalStudent / take, data: users })
+})
+
+// future plan
+app.get('/students2', async (req, res) => {
+  const totalStudent = await prisma.student.count()
+  console.log(totalStudent)
+  const firstQueryResults = await prisma.student.findMany({
+    take: 1000,
+    where: {
+
+    },
+    orderBy: {
+      id: 'asc',
+    },
+  })
+  const lastPostInResults = firstQueryResults[3] // Remember: zero-based index! :)
+  const myCursor = lastPostInResults.id // Example: 29\
+  res.send(firstQueryResults)
 })
 
 app.post('/entry_api', upload.none(), async (req, res) => {
