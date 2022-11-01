@@ -14,6 +14,13 @@ app.use(express.json());
 app.use(morgan('combined'))
 app.use(cors());
 
+
+// solve for bigint to json error
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
+
 app.get('/', async (req, res) => {
   res.send('Meow')
 })
@@ -179,8 +186,7 @@ app.get("/getSingleStudent/:id", async (req, res) => {
       versions: true
     }
   })
-  console.log(student)
-  res.json(JSON.stringify(student, (_, v) => typeof v === 'bigint' ? v.toString() : v))
+  res.json(student)
 })
 
 
