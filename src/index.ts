@@ -59,24 +59,6 @@ app.get('/students', async (req, res) => {
   res.json({ last_page: totalStudent / take, data: users })
 })
 
-// future plan
-app.get('/students2', async (req, res) => {
-  const totalStudent = await prisma.student.count()
-  console.log(totalStudent)
-  const firstQueryResults = await prisma.student.findMany({
-    take: 1000,
-    where: {
-
-    },
-    orderBy: {
-      id: 'asc',
-    },
-  })
-  const lastPostInResults = firstQueryResults[3] // Remember: zero-based index! :)
-  const myCursor = lastPostInResults.id // Example: 29\
-  res.send(firstQueryResults)
-})
-
 app.post('/entry_api', upload.none(), async (req, res) => {
   console.log(req.body)
   let aStudent: Prisma.StudentCreateInput = {
@@ -104,6 +86,122 @@ app.post('/entry_api', upload.none(), async (req, res) => {
     console.log(error)
     res.json(error)
   }
+})
+
+app.get('/update_api/:id', upload.none(), async (req, res) => {
+  const id = req.params.id;
+  const student = await prisma.student.findUnique({
+    where: {
+      id: id
+    }
+  })
+  if (student) {
+    try {
+      res.json(student)
+    } catch (error) {
+      console.log(error)
+      res.json(error)
+    }
+  }
+  else {
+    res.status(404).json({ message: "Student not found" })
+  }
+})
+app.post('/update_api/:id', upload.none(), async (req, res) => {
+  const id = req.params.id;
+  const student = await prisma.student.findUnique({
+    where: {
+      id: id
+    }
+  })
+  const aStudentPrev: Prisma.VersionUncheckedCreateInput = {
+    name: student?.name,
+    batch: student?.batch,
+    dept: student?.dept,
+    sec: student?.sec,
+    bloodGroup: student?.bloodGroup,
+    homeTown: student?.homeTown,
+    phoneNumber: student?.phoneNumber,
+    email: student?.email,
+    socialLink: student?.socialLink,
+    active: student?.active,
+    avatarLink: student?.avatarLink,
+    studentId: student?.id,
+    gender: student?.gender,
+    clg: student?.clg,
+    birthday: student?.birthday,
+  }
+  if (student) {
+    let aStudent: Prisma.StudentCreateInput = {
+      name: req.body.fname,
+      id: req.body.clid,
+      batch: +req.body.batch,
+      dept: req.body.dept,
+      sec: req.body.section,
+      gender: req.body.gender,
+      active: req.body.donor === "Yes" ? true : false,
+      bloodGroup: req.body.blood,
+      clg: req.body.clg,
+      homeTown: req.body.htown,
+      birthday: new Date(req.body.bDate),
+      phoneNumber: req.body.phone,
+      email: req.body.email,
+      socialLink: req.body.link,
+    }
+    try {
+      const studentPrev = await prisma.version.create({ data: aStudentPrev })
+      const student = await prisma.student.update({
+        where: {
+          id: req.body.clid
+        }
+        ,
+        data: aStudent,
+      })
+      res.json(student)
+    } catch (error) {
+      console.log(error)
+      res.json(error)
+    }
+  }
+  else {
+    res.status(404).json({ message: "Student not found" })
+  }
+})
+
+
+app.get("/getSingleStudent/:id", async (req, res) => {
+  const id = req.params.id;
+  const student = await prisma.student.findUnique({
+    where: {
+      id: id
+    }
+    , include: {
+      versions: true
+    }
+  })
+  console.log(student)
+  res.json(JSON.stringify(student, (_, v) => typeof v === 'bigint' ? v.toString() : v))
+})
+
+
+
+//junk 
+// future plan
+app.get('/students2', async (req, res) => {
+  const totalStudent = await prisma.student.count()
+  console.log(totalStudent)
+  const firstQueryResults = await prisma.student.findMany({
+    take: 1000,
+    where: {
+
+    },
+    orderBy: {
+      id: 'asc',
+    },
+  })
+  const lastPostInResults = firstQueryResults[3] // Remember: zero-based index! :)
+  const myCursor = lastPostInResults.id // Example: 29\
+  res.send(firstQueryResults)
 })
 app.get('/entry_api_test', upload.none(), async (req, res) => {
   for (let i = 0; i < 10; i++) {
@@ -156,15 +254,7 @@ app.get('/entry_api_test2', upload.none(), async (req, res) => {
   res.json(student)
 })
 
-app.get("/getSingleStudent/:id", async (req, res) => {
-  const id = req.params.id;
-  const student = await prisma.student.findUnique({
-    where: {
-      id: id
-    }
-  })
-  res.json(student)
-})
+
 
 const PORT = process.env.PORT || 3000
 const server = app.listen(PORT, () =>
