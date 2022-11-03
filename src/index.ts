@@ -8,6 +8,7 @@ var morgan = require('morgan')
 
 const prisma = new PrismaClient()
 const app = express()
+const PORT = process.env.PORT || 3000
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -262,7 +263,6 @@ app.get('/entry_api_test2', upload.none(), async (req, res) => {
 
 
 
-const PORT = process.env.PORT || 3000
 const server = app.listen(PORT, () =>
   console.log(`
 🚀 Server ready at: http://localhost:${PORT}`),
