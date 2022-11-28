@@ -55,6 +55,15 @@ async function updateData(authClient: any, fileID: string, data: { name: string 
         replaceText: data.name,
       },
     },
+    {
+      replaceAllText: {
+        containsText: {
+          text: "{{type_of_subject}}",
+          matchCase: true,
+        },
+        replaceText: "Assignment",
+      },
+    },
   ];
 
   const docs = google.docs({ version: "v1", auth: authClient });
@@ -101,7 +110,7 @@ authorize().then(async (authData) => {
   const copyData = await copyFile(authData, "11qhe5jHiKJ1ZvXbtx32NtgiqHHRP-GANXZlLGj3OUQc")
   if (copyData.status === 200) {
     console.log("File copied successfully")
-    const updateDataRes = await updateData(authData, copyData.data.id, { name: "test" })
+    const updateDataRes = await updateData(authData, copyData.data.id, { name: "test 12" })
     console.log(updateDataRes)
     if (updateDataRes.status === 200) {
       await exportPDF(authData, updateDataRes.data.documentId)

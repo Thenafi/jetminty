@@ -26,6 +26,15 @@ app.get('/', async (req, res) => {
   res.send('Meow')
 })
 
+app.get('/console', async (req, res) => {
+  console.log(req)
+  res.send("console")
+})
+  .post('/console', upload.none(), async (req, res) => {
+    console.log(req.body)
+    res.send("console")
+  })
+
 
 app.get('/students', async (req, res) => {
   console.log(req.query)
