@@ -5,6 +5,7 @@ const cors = require('cors');
 const upload = multer();
 const morgan = require('morgan')
 const pdfapiRouter = require('./routes/pdfapi/pdf');
+const teacher = require('./routes/teacher-info/index');
 
 const prisma = new PrismaClient()
 const app = express()
@@ -14,7 +15,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(morgan('combined'))
 app.use(cors());
+
+//routes
 app.use('/pdfapi', pdfapiRouter);
+app.use('/teacher-info', teacher);
 
 // solve for bigint to json error
 (BigInt.prototype as any).toJSON = function () {
