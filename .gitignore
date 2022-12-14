@@ -128,3 +128,4 @@ dist
 crt.json
 token.json
 test.js
+test.ts

@@ -3,11 +3,15 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const dotenv = require("dotenv");
-const { s3ClientTebi, bucketParamsDoremon, PutObjectCommand } = require("../../utils/buckets");
+const {
+  s3ClientTebi,
+  bucketParamsDoremon,
+  PutObjectCommand,
+} = require("./buckets");
 
 dotenv.config();
 
-async function loadCredentials() {
+const authorize = async function () {
   const credentials = {
     type: process.env.TYPE,
     client_id: process.env.CLIENT_ID,
@@ -15,34 +19,23 @@ async function loadCredentials() {
     refresh_token: process.env.REFRESH_TOKEN,
   };
   return google.auth.fromJSON(credentials);
-}
+};
 
-async function authorize() {
-  return await loadCredentials();
-}
-
-async function copyFile(authClient: any, copyFileID: string) {
-  const date = new Date();
-  const options: any = { year: "numeric", month: "long", day: "numeric" };
+const copyFile = async function (copyFileID: string, fileName: string) {
   const copyRequest = {
-    // Modified
-    name: `${date.toLocaleDateString("en-US", options)}`,
+    name: fileName,
     parents: ["1jR-ikAAMmiWh-7vKCproajPGevf1M1Px"],
   };
-
+  const authClient = await authorize();
   const drive = google.drive({ version: "v3", auth: authClient });
   const res = await drive.files.copy({
     fileId: copyFileID,
     requestBody: copyRequest,
   });
   return res;
-}
+};
 
-async function updateData(
-  authClient: any,
-  fileID: string,
-  data: { name: string }
-) {
+const updateData = async function (fileID: string, data: { name: string }) {
   const requests = [
     {
       replaceAllText: {
@@ -63,16 +56,17 @@ async function updateData(
       },
     },
   ];
-
+  const authClient = await authorize();
   const docs = google.docs({ version: "v1", auth: authClient });
   const res = await docs.documents.batchUpdate({
     documentId: fileID,
     resource: { requests: requests },
   });
   return res;
-}
+};
 
-async function exportPDF(authClient: any, fileID: string) {
+const exportPDF = async function (fileID: string) {
+  const authClient = await authorize();
   const drive = google.drive({ version: "v3", auth: authClient });
 
   const destPath = path.join(os.tmpdir(), "temp.pdf");
@@ -82,13 +76,12 @@ async function exportPDF(authClient: any, fileID: string) {
     { responseType: "stream" }
   );
 
-
   res.data
     .on("end", () => {
       console.log(`Done downloading document: ${destPath}.`);
       try {
         fs.readFile(destPath, (err: any, data: any) => {
-          bucketParamsDoremon.Key = "creation/Random32.pdf";
+          bucketParamsDoremon.Key = "magic_pocket/Random32.pdf";
           bucketParamsDoremon.Body = data;
 
           s3ClientTebi
@@ -105,22 +98,22 @@ async function exportPDF(authClient: any, fileID: string) {
       console.error("Error downloading document.");
     })
     .pipe(dest);
-}
+};
 
 authorize()
-  .then(async (authData) => {
+  .then(async () => {
     const copyData = await copyFile(
-      authData,
-      "11qhe5jHiKJ1ZvXbtx32NtgiqHHRP-GANXZlLGj3OUQc"
+      "11qhe5jHiKJ1ZvXbtx32NtgiqHHRP-GANXZlLGj3OUQc",
+      "Random Name"
     );
     if (copyData.status === 200) {
       console.log("File copied successfully");
-      const updateDataRes = await updateData(authData, copyData.data.id, {
+      const updateDataRes = await updateData(copyData.data.id, {
         name: "tes3t 12",
       });
       // console.log(updateDataRes)
       if (updateDataRes.status === 200) {
-        await exportPDF(authData, updateDataRes.data.documentId);
+        await exportPDF(updateDataRes.data.documentId);
       }
     } else {
       new Error("File not copied");

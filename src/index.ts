@@ -1,87 +1,98 @@
-import { Prisma, PrismaClient, Student, Version } from '@prisma/client'
-import express from 'express'
-const multer = require('multer');
-const cors = require('cors');
+import { Prisma, PrismaClient, Student, Version } from "@prisma/client";
+import express from "express";
+const multer = require("multer");
+const cors = require("cors");
 const upload = multer();
-const morgan = require('morgan')
-const pdfapiRouter = require('./routes/pdfapi/pdf');
-const teacher = require('./routes/teacher-info/index');
+const morgan = require("morgan");
+const pdfapiRouter = require("./routes/pdfapi/pdf");
+const teacher = require("./routes/teacher-info/index");
+const { googleDocNameMaker } = require("./utils/idmaker");
 
-const prisma = new PrismaClient()
-const app = express()
-const PORT = process.env.PORT || 8080
+let googleDocNameMakerGen = googleDocNameMaker();
+const prisma = new PrismaClient();
+const app = express();
+const PORT = process.env.PORT || 8080;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(morgan('combined'))
+app.use(morgan("combined"));
 app.use(cors());
 
 //routes
-app.use('/pdfapi', pdfapiRouter);
-app.use('/teacher-info', teacher);
+app.use("/pdfapi", pdfapiRouter);
+app.use("/teacher-info", teacher);
 
 // solve for bigint to json error
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
 
-
-app.get('/', async (req, res) => {
-  res.send('Meow')
-})
-
-app.get('/console', async (req, res) => {
-  console.log(req)
-  res.send("console")
-})
-  .post('/console', upload.none(), async (req, res) => {
-    console.log(req.body)
-    res.send("console")
+app.get("/", async (req, res) => {
+  res.send("Meow");
+});
+app.get("/random-id", async (req, res) => {
+  const value = googleDocNameMakerGen.next().value;
+  if (value === undefined) {
+    googleDocNameMakerGen = googleDocNameMaker();
+  }
+  res.send(value ? value : "meow_23");
+});
+app
+  .get("/console", async (req, res) => {
+    console.log(req);
+    res.send("console");
   })
+  .post("/console", upload.none(), async (req, res) => {
+    console.log(req.body);
+    res.send("console");
+  });
 
-
-app.get('/students', async (req, res) => {
-  console.log(req.query)
-  const skip: number = req.query.page ? parseInt(req.query.page as string) - 1 : 0
-  const take: number = req.query.size ? parseInt(req.query.size as string) : 100
-  const filter: { field: string, type: string, value: string }[] = req.query.filter ? req.query.filter as [] : []
-  const filterArray: any[] = []
+app.get("/students", async (req, res) => {
+  console.log(req.query);
+  const skip: number = req.query.page
+    ? parseInt(req.query.page as string) - 1
+    : 0;
+  const take: number = req.query.size
+    ? parseInt(req.query.size as string)
+    : 100;
+  const filter: { field: string; type: string; value: string }[] = req.query
+    .filter
+    ? (req.query.filter as [])
+    : [];
+  const filterArray: any[] = [];
   for (let i = 0; i < filter.length; i++) {
     const element = filter[i];
-    if (element.type === '=') {
+    if (element.type === "=") {
       filterArray.push({
         [element.field]: {
-          equals: parseInt(element.value) ? parseInt(element.value) : element.value
-        }
-
-      })
-
-
-    } else if (element.type === 'like') {
+          equals: parseInt(element.value)
+            ? parseInt(element.value)
+            : element.value,
+        },
+      });
+    } else if (element.type === "like") {
       filterArray.push({
         [element.field]: {
-          contains: element.value
-        }
-
-      })
+          contains: element.value,
+        },
+      });
     }
-
   }
-  console.log(filterArray)
-  const totalStudent = await prisma.student.count()
+  console.log(filterArray);
+  const totalStudent = await prisma.student.count();
 
   const users = await prisma.student.findMany({
     skip: skip,
     take: take,
     where: {
-      AND: filterArray
-    }
-  })
-  res.json({ last_page: totalStudent / take, data: users })
-})
+      AND: filterArray,
+    },
+  });
+  res.json({ last_page: totalStudent / take, data: users });
+});
 
-app.post('/entry_api', upload.none(), async (req, res) => {
-  console.log(req.body)
+app.post("/entry_api", upload.none(), async (req, res) => {
+  console.log(req.body);
   let aStudent: Prisma.StudentCreateInput = {
     name: req.body.fname,
     id: req.body.clid,
@@ -97,44 +108,43 @@ app.post('/entry_api', upload.none(), async (req, res) => {
     phoneNumber: req.body.phone,
     email: req.body.email,
     socialLink: req.body.link,
-  }
+  };
   try {
     const student = await prisma.student.create({
       data: aStudent,
-    })
-    res.json(student)
+    });
+    res.json(student);
   } catch (error) {
-    console.log(error)
-    res.json(error)
+    console.log(error);
+    res.json(error);
   }
-})
+});
 
-app.get('/update_api/:id', upload.none(), async (req, res) => {
+app.get("/update_api/:id", upload.none(), async (req, res) => {
   const id = req.params.id;
   const student = await prisma.student.findUnique({
     where: {
-      id: id
-    }
-  })
+      id: id,
+    },
+  });
   if (student) {
     try {
-      res.json(student)
+      res.json(student);
     } catch (error) {
-      console.log(error)
-      res.json(error)
+      console.log(error);
+      res.json(error);
     }
+  } else {
+    res.status(404).json({ message: "Student not found" });
   }
-  else {
-    res.status(404).json({ message: "Student not found" })
-  }
-})
-app.post('/update_api/:id', upload.none(), async (req, res) => {
+});
+app.post("/update_api/:id", upload.none(), async (req, res) => {
   const id = req.params.id;
   const student = await prisma.student.findUnique({
     where: {
-      id: id
-    }
-  })
+      id: id,
+    },
+  });
   const aStudentPrev: Prisma.VersionUncheckedCreateInput = {
     name: student?.name,
     batch: student?.batch,
@@ -151,7 +161,7 @@ app.post('/update_api/:id', upload.none(), async (req, res) => {
     gender: student?.gender,
     clg: student?.clg,
     birthday: student?.birthday,
-  }
+  };
   if (student) {
     let aStudent: Prisma.StudentCreateInput = {
       name: req.body.fname,
@@ -168,62 +178,55 @@ app.post('/update_api/:id', upload.none(), async (req, res) => {
       phoneNumber: req.body.phone,
       email: req.body.email,
       socialLink: req.body.link,
-    }
+    };
     try {
-      const studentPrev = await prisma.version.create({ data: aStudentPrev })
+      const studentPrev = await prisma.version.create({ data: aStudentPrev });
       const student = await prisma.student.update({
         where: {
-          id: req.body.clid
-        }
-        ,
+          id: req.body.clid,
+        },
         data: aStudent,
-      })
-      res.json(student)
+      });
+      res.json(student);
     } catch (error) {
-      console.log(error)
-      res.json(error)
+      console.log(error);
+      res.json(error);
     }
+  } else {
+    res.status(404).json({ message: "Student not found" });
   }
-  else {
-    res.status(404).json({ message: "Student not found" })
-  }
-})
-
+});
 
 app.get("/getSingleStudent/:id", async (req, res) => {
   const id = req.params.id;
   const student = await prisma.student.findUnique({
     where: {
-      id: id
-    }
-    , include: {
-      versions: true
-    }
-  })
-  res.json(student)
-})
+      id: id,
+    },
+    include: {
+      versions: true,
+    },
+  });
+  res.json(student);
+});
 
-
-
-//junk 
+//junk
 // future plan
-app.get('/students2', async (req, res) => {
-  const totalStudent = await prisma.student.count()
-  console.log(totalStudent)
+app.get("/students2", async (req, res) => {
+  const totalStudent = await prisma.student.count();
+  console.log(totalStudent);
   const firstQueryResults = await prisma.student.findMany({
     take: 1000,
-    where: {
-
-    },
+    where: {},
     orderBy: {
-      id: 'asc',
+      id: "asc",
     },
-  })
-  const lastPostInResults = firstQueryResults[3] // Remember: zero-based index! :)
-  const myCursor = lastPostInResults.id // Example: 29\
-  res.send(firstQueryResults)
-})
-app.get('/entry_api_test', upload.none(), async (req, res) => {
+  });
+  const lastPostInResults = firstQueryResults[3]; // Remember: zero-based index! :)
+  const myCursor = lastPostInResults.id; // Example: 29\
+  res.send(firstQueryResults);
+});
+app.get("/entry_api_test", upload.none(), async (req, res) => {
   for (let i = 0; i < 10; i++) {
     let aStudent: Prisma.StudentCreateInput = {
       name: "MD MAHMODUL HAQUE",
@@ -239,16 +242,16 @@ app.get('/entry_api_test', upload.none(), async (req, res) => {
       clg: "BAF SHAHEEN COLLEGE",
       active: false,
       birthday: new Date("1999-04-23"),
-      phoneNumber: `01723558696${i}`
-    }
+      phoneNumber: `01723558696${i}`,
+    };
     const student = await prisma.student.create({
       data: aStudent,
-    })
+    });
   }
-  res.json("done")
-})
-app.get('/entry_api_test2', upload.none(), async (req, res) => {
-  let students: Prisma.StudentCreateInput[] = []
+  res.json("done");
+});
+app.get("/entry_api_test2", upload.none(), async (req, res) => {
+  let students: Prisma.StudentCreateInput[] = [];
   for (let i = 1000; i < 90000; i++) {
     let aStudent: Prisma.StudentCreateInput = {
       name: "MD MAHMODUL HAQUE 01723558696${i}@gmail ",
@@ -257,26 +260,25 @@ app.get('/entry_api_test2', upload.none(), async (req, res) => {
       batch: 8,
       dept: "TEX",
       bloodGroup: "A+",
-      homeTown: "01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail",
+      homeTown:
+        "01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail",
       socialLink: `01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail`,
       gender: "M",
       sec: "C",
       clg: "01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail",
       active: false,
       birthday: new Date("1999-04-23"),
-      phoneNumber: `01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail`
-    }
-    students.push(aStudent)
+      phoneNumber: `01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail01723558696${i}@gmail`,
+    };
+    students.push(aStudent);
   }
   const student = await prisma.student.createMany({
     data: [...students],
-  })
-  res.json(student)
-})
-
-
+  });
+  res.json(student);
+});
 
 const server = app.listen(PORT, () =>
   console.log(`
-🚀 Server ready at: http://localhost:${PORT}`),
-)
+🚀 Server ready at: http://localhost:${PORT}`)
+);
