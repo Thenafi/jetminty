@@ -35,27 +35,22 @@ const copyFile = async function (copyFileID: string, fileName: string) {
   return res;
 };
 
-const updateData = async function (fileID: string, data: { name: string }) {
+const updateData = async function (fileID: string, data: any) {
   const requests = [
-    {
-      replaceAllText: {
-        containsText: {
-          text: "{{name}}",
-          matchCase: true,
-        },
-        replaceText: data.name,
-      },
-    },
-    {
-      replaceAllText: {
-        containsText: {
-          text: "{{type_of_subject}}",
-          matchCase: true,
-        },
-        replaceText: "Assignment",
-      },
-    },
   ];
+
+  for (const key in data) {
+    requests.push({
+      replaceAllText: {
+        containsText: {
+          text: `{{${key}}}`,
+          matchCase: true,
+        },
+        replaceText: data[key],
+      },
+    })
+  }
+
   const authClient = await authorize();
   const docs = google.docs({ version: "v1", auth: authClient });
   const res = await docs.documents.batchUpdate({
@@ -65,7 +60,7 @@ const updateData = async function (fileID: string, data: { name: string }) {
   return res;
 };
 
-const exportPDF = async function (fileID: string) {
+const exportPDF = async function (fileID: string, fileName: string) {
   const authClient = await authorize();
   const drive = google.drive({ version: "v3", auth: authClient });
 
@@ -78,16 +73,16 @@ const exportPDF = async function (fileID: string) {
 
   res.data
     .on("end", () => {
-      console.log(`Done downloading document: ${destPath}.`);
+
       try {
         fs.readFile(destPath, (err: any, data: any) => {
-          bucketParamsDoremon.Key = "magic_pocket/Random32.pdf";
+          bucketParamsDoremon.Key = "magic_pocket/" + fileName + ".pdf";
           bucketParamsDoremon.Body = data;
 
           s3ClientTebi
             .send(new PutObjectCommand(bucketParamsDoremon))
             .then((data: any) => {
-              console.log("Done", data);
+              ;
             });
         });
       } catch (err) {
@@ -98,25 +93,40 @@ const exportPDF = async function (fileID: string) {
       console.error("Error downloading document.");
     })
     .pipe(dest);
+
+  return {
+    status: res.status,
+    googleDocUlr: "https://docs.google.com/document/d/" + fileID,
+    pdfUrl: "https://s3.tebi.io/doremon/magic_pocket/" + fileName + ".pdf",
+  }
 };
 
-authorize()
-  .then(async () => {
-    const copyData = await copyFile(
-      "11qhe5jHiKJ1ZvXbtx32NtgiqHHRP-GANXZlLGj3OUQc",
-      "Random Name"
-    );
-    if (copyData.status === 200) {
-      console.log("File copied successfully");
-      const updateDataRes = await updateData(copyData.data.id, {
-        name: "tes3t 12",
-      });
-      // console.log(updateDataRes)
-      if (updateDataRes.status === 200) {
-        await exportPDF(updateDataRes.data.documentId);
+
+
+const pdfCreator = async function (data: any, fileID: string, fileName: string) {
+  const copyData = await copyFile(fileID, fileName);
+  if (copyData.status === 200) {
+    // console.log("File copied successfully");
+    const updateDataRes = await updateData(copyData.data.id, data);
+    // console.log(updateDataRes)
+    if (updateDataRes.status === 200) {
+      const exportedPdfRes = await exportPDF(updateDataRes.data.documentId, fileName);
+      if (exportedPdfRes.status === 200) {
+        console.log("Process completed successfully")
+        return exportedPdfRes;
       }
-    } else {
-      new Error("File not copied");
+      else {
+        new Error("File not updated");
+      }
     }
-  })
-  .catch(console.error);
+    else {
+      new Error("File not updated");
+    }
+  } else {
+    new Error("File not copied");
+  }
+}
+
+
+
+module.exports = { pdfCreator };

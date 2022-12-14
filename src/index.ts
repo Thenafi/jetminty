@@ -2,7 +2,6 @@ import { Prisma, PrismaClient, Student, Version } from "@prisma/client";
 import express from "express";
 const multer = require("multer");
 const cors = require("cors");
-const upload = multer();
 const morgan = require("morgan");
 const pdfapiRouter = require("./routes/pdfapi/pdf");
 const teacher = require("./routes/teacher-info/index");
@@ -11,6 +10,7 @@ const { googleDocNameMaker } = require("./utils/idmaker");
 let googleDocNameMakerGen = googleDocNameMaker();
 const prisma = new PrismaClient();
 const app = express();
+const upload = multer();
 const PORT = process.env.PORT || 8080;
 
 app.use(express.urlencoded({ extended: true }));
@@ -30,6 +30,7 @@ app.use("/teacher-info", teacher);
 app.get("/", async (req, res) => {
   res.send("Meow");
 });
+
 app.get("/random-id", async (req, res) => {
   const value = googleDocNameMakerGen.next().value;
   if (value === undefined) {
@@ -37,6 +38,7 @@ app.get("/random-id", async (req, res) => {
   }
   res.send(value ? value : "meow_23");
 });
+
 app
   .get("/console", async (req, res) => {
     console.log(req);

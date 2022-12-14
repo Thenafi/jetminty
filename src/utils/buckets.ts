@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, ListObjectsV2Command } = require("@aws-sdk/client-s3");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -24,4 +24,19 @@ const bucketParamsDoremon: { Bucket: string, Key: string, Body: string, ACL: str
 };
 
 
-module.exports = { bucketParamsDoremon, s3ClientTebi, PutObjectCommand }
+
+
+const listOfObjectsInBucket = async function (bucketName: string, prefix: string) {
+    const params = {
+        Bucket: bucketName,
+        Prefix: prefix
+    };
+    const data = await s3ClientTebi.send(new ListObjectsV2Command(params));
+    if (data.Contents === undefined) return [];
+    // returns the key by last modified date in descending order
+    return data.Contents.sort((a: any, b: any) => b.LastModified - a.LastModified).map((item: any) => item.Key);
+}
+
+
+
+module.exports = { bucketParamsDoremon, s3ClientTebi, PutObjectCommand, listOfObjectsInBucket }
