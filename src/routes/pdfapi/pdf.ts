@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 const redis = require("../../utils/db");
 const { googleDocNameMaker } = require("../../utils/idmaker");
 const { pdfCreator } = require("../../utils/pdfcreator");
-const { listOfObjectsInBucket } = require("../../utils/buckets")
+const { listOfObjectsInBucket } = require("../../utils/buckets");
 
 const multer = require("multer");
 
@@ -16,8 +16,6 @@ router.get("/", async (req, res) => {
     res.send("At PDF route");
 });
 
-
-
 router.post("/create", upload.none(), async (req: any, res: any) => {
     const data = req.body;
     const value = googleDocNameMakerGen.next().value;
@@ -25,9 +23,11 @@ router.post("/create", upload.none(), async (req: any, res: any) => {
         googleDocNameMakerGen = googleDocNameMaker();
     }
     if (data.student_id === undefined && data.docID === undefined) {
-        res.status(400)
+        res.status(400);
     }
-    const docName = value ? data.student_id + "_" + value : data.student_id + "_meow_23";
+    const docName = value
+        ? data.student_id + "_" + value
+        : data.student_id + "_meow_23";
     const docID = data.docID;
     //remove the docID from data
     delete data.docID;
@@ -37,30 +37,32 @@ router.post("/create", upload.none(), async (req: any, res: any) => {
     if (pdf) {
         res.send(pdf);
     } else {
-        res.status(500)
+        res.status(500);
     }
 });
-
 
 router.get("/created-pdf-links", async (req, res) => {
     const { studentId } = req.query;
     let pdfLinks: string[] = [];
     if (studentId) {
-        pdfLinks = await listOfObjectsInBucket("doremon", "magic_pocket/" + studentId);
-    }
-    else {
+        pdfLinks = await listOfObjectsInBucket(
+            "doremon",
+            "magic_pocket/" + studentId
+        );
+    } else {
         pdfLinks = await listOfObjectsInBucket("doremon", "magic_pocket/");
     }
     if (pdfLinks.length === 0) {
-        res.status(404)
+        res.status(404);
     }
     pdfLinks = pdfLinks.map((link: any) => {
         return "https://s3.tebi.io/doremon/" + link;
-    }
-    )
+    });
 
-    pdfLinks.pop();
+    pdfLinks = pdfLinks.filter((link: any) => {
+        return link.includes(".pdf");
+    });
     res.send(pdfLinks);
-})
+});
 
 module.exports = router;
