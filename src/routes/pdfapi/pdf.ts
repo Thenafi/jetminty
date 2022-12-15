@@ -23,7 +23,7 @@ router.post("/create", upload.none(), async (req: any, res: any) => {
         googleDocNameMakerGen = googleDocNameMaker();
     }
     if (data.student_id === undefined && data.docID === undefined) {
-        res.status(400);
+        res.sendStatus(400);
     }
     const docName = value
         ? data.student_id + "_" + value
@@ -34,10 +34,11 @@ router.post("/create", upload.none(), async (req: any, res: any) => {
 
     //create the pdf
     const pdf = await pdfCreator(data, docID, docName);
+    console.log(pdf);
     if (pdf) {
         res.send(pdf);
     } else {
-        res.status(500);
+        res.sendStatus(500);
     }
 });
 
@@ -53,7 +54,7 @@ router.get("/created-pdf-links", async (req, res) => {
         pdfLinks = await listOfObjectsInBucket("doremon", "magic_pocket/");
     }
     if (pdfLinks.length === 0) {
-        res.status(404);
+        res.sendStatus(404);
     }
     pdfLinks = pdfLinks.map((link: any) => {
         return "https://s3.tebi.io/doremon/" + link;
