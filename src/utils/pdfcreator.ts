@@ -82,7 +82,11 @@ const exportPDF = async function (fileID: string, fileName: string) {
           s3ClientTebi
             .send(new PutObjectCommand(bucketParamsDoremon))
             .then((data: any) => {
-              ;
+              return {
+                status: 200,
+                googleDocUlr: "https://docs.google.com/document/d/" + fileID,
+                pdfUrl: "https://s3.tebi.io/doremon/magic_pocket/" + fileName + ".pdf",
+              }
             });
         });
       } catch (err) {
@@ -93,12 +97,11 @@ const exportPDF = async function (fileID: string, fileName: string) {
       console.error("Error downloading document.");
     })
     .pipe(dest);
-
   return {
-    status: res.status,
-    googleDocUlr: "https://docs.google.com/document/d/" + fileID,
-    pdfUrl: "https://s3.tebi.io/doremon/magic_pocket/" + fileName + ".pdf",
+    status: 500,
   }
+
+
 };
 
 
@@ -116,7 +119,7 @@ const pdfCreator = async function (data: any, fileID: string, fileName: string) 
         return exportedPdfRes;
       }
       else {
-        new Error("File not updated");
+        new Error("File not exported");
       }
     }
     else {
