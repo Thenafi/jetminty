@@ -34,7 +34,6 @@ router.post("/create", upload.none(), async (req: any, res: any) => {
 
     //create the pdf
     const pdf = await pdfCreator(data, docID, docName);
-    console.log(pdf);
     if (pdf) {
         res.send(pdf);
     } else {
