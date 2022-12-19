@@ -136,12 +136,5 @@ const pdfCreator = async function (
   }
 };
 
-pdfCreator(
-  { student_name: "Ola" },
-  "11qhe5jHiKJ1ZvXbtx32NtgiqHHRP-GANXZlLGj3OUQc",
-  "Test"
-).then((res) => {
-  console.log(res);
-});
 
 module.exports = { pdfCreator };

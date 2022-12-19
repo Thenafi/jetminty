@@ -29,8 +29,6 @@ router.post("/create", upload.none(), async (req: any, res: any) => {
         ? data.student_id + "_" + value
         : data.student_id + "_meow_23";
     const docID = data.docID;
-    //remove the docID from data
-    delete data.docID;
 
     //create the pdf
     const pdf = await pdfCreator(data, docID, docName);
