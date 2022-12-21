@@ -212,6 +212,23 @@ app.get("/getSingleStudent/:id", async (req, res) => {
   res.json(student);
 });
 
+
+
+
+
+app.get('/robots.txt', function (req, res) {
+  res.type('text/plain');
+  res.send("User-agent: *\nDisallow: /");
+});
+
+
+
+
+
+
+
+
+
 //junk
 // future plan
 app.get("/students2", async (req, res) => {

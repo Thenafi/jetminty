@@ -24,6 +24,7 @@
     "moment": "^2.29.4",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "node-mailjet": "^5.1.1",
     "node-nlp": "^4.24.0",
     "s3-client": "^4.4.2",
     "string-similarity": "^4.0.4",

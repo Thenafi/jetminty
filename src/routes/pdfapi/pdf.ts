@@ -5,6 +5,7 @@ const redis = require("../../utils/db");
 const { googleDocNameMaker } = require("../../utils/idmaker");
 const { pdfCreator } = require("../../utils/pdfcreator");
 const { listOfObjectsInBucket } = require("../../utils/buckets");
+const { sendCoverGeneratedLinks } = require("../../utils/mail");
 
 const multer = require("multer");
 
@@ -33,6 +34,11 @@ router.post("/create", upload.none(), async (req: any, res: any) => {
     //create the pdf
     const pdf = await pdfCreator(data, docID, docName);
     if (pdf) {
+        //send the pdf link to the user
+        const emailList = [data.student_email];
+        const googleDocLink = pdf.googleDocUlr;
+        const pdfLink = pdf.pdfUrl;
+        sendCoverGeneratedLinks(emailList, googleDocLink, pdfLink);
         res.send(pdf);
     } else {
         res.sendStatus(500);
